@@ -1,10 +1,10 @@
 # One console, two browsers: building a shared PlayStation room
 
-**By Ahmad Zushan — Published 10 September 2026 · Version 1.0**
+**By Ahmad Zushan — Published and updated 10 September 2026 · Version 1.1**
 
 Our goal at [ps.zooshan.com](https://ps.zooshan.com/) is to bring local two-player PlayStation games to people who are in different places, without asking either player to install and configure an emulator. One console runs on our server. Two browsers become its screen and its two controllers.
 
-This article documents our implementation, its approach to responsiveness, and our proposed spectator experience. It also draws an important distinction between a shared simulation and equal network latency.
+This article documents our implementation, its approach to responsiveness, and its spectator experience. Version 1.1 records the addition of bounded read-only spectators, operator controls and a tournament dashboard. It also draws an important distinction between a shared simulation and equal network latency.
 
 > One emulated console, two remote controller seats. Neither player runs the match locally—but their network and display delays can still differ.
 
@@ -16,7 +16,7 @@ Each browser has its own WebRTC connection to the service. Video comes from that
 
 This is remote local multiplayer: the game must already support two local controllers. Sharing a room does not turn a single-player title into a multiplayer game. It also does not require synchronizing two independently running emulator copies.
 
-The room creator controls Player 1, and an invited browser controls Player 2. Controller identity is assigned by the service from the authenticated session rather than accepted from a client-supplied player number. The creator still has room-management privileges, such as ending the session; the two roles do not have identical administrative permissions.
+In an ordinary room, the creator controls Player 1, and the first invited browser controls Player 2. In a tournament, the selected registrations receive those two controller seats. Controller identity is assigned by the service from the authenticated session rather than accepted from a client-supplied player number. Organizers retain room-management privileges; being assigned Player 1 in a tournament does not itself confer those privileges.
 
 ## A shared host is not equal ping
 
@@ -51,15 +51,17 @@ The run covered approximately seven and a half minutes of measured phases: both 
 
 Those capture-delay figures are only one internal portion of the pipeline. They are not 3 ms internet gameplay latency, not a measurement of physical button-to-screen response, and not proof that both players experience the same delay. The public article records the scope and limitations of this internal check; it is not an independent benchmark.
 
-## Spectators: the next design step
+## Spectators and organized matches
 
-**Proposed feature — not available in the current release.**
+**Added in version 1.1. Spectators are read-only.**
 
-We want a person who is not playing to open an authorized watch link and follow the match without taking either controller seat. The current application has two authenticated player seats only. Sharing a player invitation is not a spectator mechanism, and opening another tab for an existing seat can replace that seat's connection.
+The original version 1.0 article described spectators as a proposal. This update implements bounded spectator membership: the first new visitor to a room invitation takes Player 2, and later visitors can watch without claiming a controller, subject to host settings. Invitations expire or can be revoked. An existing player reopening a link keeps their role; opening another tab for the same membership can replace that membership's connection.
 
-The proposed design adds a separate read-only viewer role. A spectator would receive the game's media but have no controller-input channel or permission to upload a disc, restore a state, claim a player seat or manage the room. Watch access should be independently revocable and subject to the host's consent and a viewer limit. “Anyone can watch” should mean anyone the host chooses to admit, not that every private game is automatically public.
+Spectators receive media but no accepted controller-input channel or permission to upload a disc, restore a state, claim a player seat or manage the room. The organizer can revoke an invitation independently of removing already-connected viewers. The default limit is two spectators, configurable from zero to four. “Anyone can watch” means people admitted through the room link or the organizer-enabled tournament watch flow—not unrestricted access to every private game.
 
-Spectators must not slow the people playing. Each extra viewer consumes bandwidth and potentially encoding resources, so a production version needs capacity limits, load tests and isolation of the player path. Larger audiences may require a separate distribution layer, such as a selective forwarding unit. This is a design direction, not a deployed scaling guarantee; viewers may also see the action at different times.
+Each additional viewer consumes bandwidth and encoding resources. These are deliberately small limits, not a guarantee that adding viewers cannot affect player responsiveness. Larger audiences would require further load testing and potentially a separate distribution layer. Viewers can also see the action at different times.
+
+The operator desk exposes validated output-resolution and stream-frame-cap settings, pre-start emulation choices, spectator controls and bounded diagnostics. The tournament dashboard supports registration-order single elimination or round robin, a waiting queue and organizer-confirmed series results. One match runs at a time. Old controller credentials and connections are revoked when assignments change; participants waiting for another match cannot choose an active controller port. Registration and results persist separately from temporary game uploads. Results are confirmed by an organizer, not automatically recognized from gameplay.
 
 ## Attribution and earlier work
 
@@ -73,6 +75,6 @@ Emulation in our service uses [PCSX-ReARMed](https://github.com/libretro/pcsx_re
 
 The byline, publication date and public revision history make this account attributable and citable. They do not prove that an idea was first conceived here, grant a patent, or prevent others from independently building similar systems. Public disclosure can affect future patent options; [WIPO's patent guidance](https://www.wipo.int/en/web/patents/faq_patents) explains the importance of novelty, earlier disclosures and filing decisions. This note is general information, not legal advice.
 
-Suggested citation: Ahmad Zushan. “One console, two browsers: building a shared PlayStation room.” Version 1.0, 10 September 2026. https://ps.zooshan.com/article
+Suggested citation: Ahmad Zushan. “One console, two browsers: building a shared PlayStation room.” Version 1.1, 10 September 2026. https://ps.zooshan.com/article
 
 The [public article repository](https://github.com/Zushan/ps-streaming-architecture) contains this publication and its revision history, not the private application repository, deployment credentials, user uploads or game assets.
